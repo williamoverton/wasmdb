@@ -1,0 +1,15 @@
+[package]
+name = "wasmdb"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wasmtime = "^0.34.0"
+anyhow = "1.0.56"
+wasmtime-wasi = "^0.34.0"
+wasi-common = "^0.34.0"
+wasi-cap-std-sync = "^0.34.0"
+wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen"}
+wit-bindgen-rust = { git = "https://github.com/bytecodealliance/wit-bindgen" }

@@ -1,0 +1,15 @@
+[package]
+name = "hello"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# wasm-bindgen = "0.2.54"
+# wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen", rev = "2e654dc82b7f9331719ba617a36ed5967b2aecb0" }
+# witgen = "0.11.0"
+wit-bindgen-rust = { git = "https://github.com/bytecodealliance/wit-bindgen", rev = "32e63116d469d8046727fae3c1333a7d35d0c5d3" }
+
+# [lib]
+# crate-type = ['cdylib']
