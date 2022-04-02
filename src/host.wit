@@ -1,2 +1,10 @@
 print: function(message: string)
-double: function(num: f64) -> f64
+
+get-args: function() -> list<string>
+
+type dbrecord = tuple<string, list<tuple<string, string>>>
+
+get-all: function() -> list<dbrecord>
+get: function(key: string) -> dbrecord
+
+upsert: function(key: string, values: list<tuple<string, string>>)
