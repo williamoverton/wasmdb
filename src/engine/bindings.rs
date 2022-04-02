@@ -1,17 +1,20 @@
 pub mod host {
   #[allow(unused_imports)]
   use wit_bindgen_wasmtime::{wasmtime, anyhow};
-  pub type Dbrecord = (String,Vec<(String,String,)>,);
+  pub type DbrecordParam<'a,> = (&'a  str,Vec<(&'a  str,&'a  str,)>,);
+  pub type DbrecordResult = (String,Vec<(String,String,)>,);
   pub trait Host: Sized {
     fn print(&mut self,message: & str,);
     
     fn get_args(&mut self,) -> Vec<String>;
     
-    fn get_all(&mut self,) -> Vec<Dbrecord>;
+    fn get_all(&mut self,) -> Vec<DbrecordResult>;
     
-    fn get(&mut self,key: & str,) -> Dbrecord;
+    fn get(&mut self,key: & str,) -> DbrecordResult;
     
     fn upsert(&mut self,key: & str,values: Vec<(& str,& str,)>,);
+    
+    fn return_record(&mut self,dbrecord: DbrecordParam<'_,>,);
     
   }
   
@@ -172,6 +175,34 @@ pub mod host {
               let param0 = _bc.slice_str(ptr0, len0)?;
               let param1 = result7;
               host.upsert(param0, param1, );
+              Ok(())
+            })?;
+            linker.func_wrap("host", "return-record", move |mut caller: wasmtime::Caller<'_, T>,arg0:i32,arg1:i32,arg2:i32,arg3:i32| {
+              let memory = &get_memory(&mut caller, "memory")?;
+              let (mem, data) = memory.data_and_store_mut(&mut caller);
+              let mut _bc = wit_bindgen_wasmtime::BorrowChecker::new(mem);
+              let host = get(data);
+              let ptr0 = arg0;
+              let len0 = arg1;
+              let len7 = arg3;
+              let base7 = arg2;
+              let mut result7 = Vec::with_capacity(len7 as usize);
+              for i in 0..len7 {
+                let base = base7 + i *16;
+                result7.push({
+                  let load1 = _bc.load::<i32>(base + 0)?;
+                  let load2 = _bc.load::<i32>(base + 4)?;
+                  let ptr3 = load1;
+                  let len3 = load2;
+                  let load4 = _bc.load::<i32>(base + 8)?;
+                  let load5 = _bc.load::<i32>(base + 12)?;
+                  let ptr6 = load4;
+                  let len6 = load5;
+                  (_bc.slice_str(ptr3, len3)?, _bc.slice_str(ptr6, len6)?)
+                });
+              }
+              let param0 = (_bc.slice_str(ptr0, len0)?, result7);
+              host.return_record(param0, );
               Ok(())
             })?;
             Ok(())

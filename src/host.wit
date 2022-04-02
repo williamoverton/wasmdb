@@ -8,3 +8,5 @@ get-all: function() -> list<dbrecord>
 get: function(key: string) -> dbrecord
 
 upsert: function(key: string, values: list<tuple<string, string>>)
+
+return-record: function(dbrecord: dbrecord)

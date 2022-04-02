@@ -5,6 +5,7 @@ use bindings::host;
 use wasi_cap_std_sync::{ambient_authority, Dir, WasiCtxBuilder};
 use wasi_common::WasiCtx;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 mod datastore;
 use datastore::DataStore;
@@ -30,8 +31,7 @@ impl WasmDbEngine {
         self.modules.get(name)
     }
 
-    pub fn run(&mut self, func_name: String, arguments: Vec<String>) -> Result<(), Box<dyn Error>> {
-
+    pub fn run(&mut self, func_name: String, arguments: Vec<String>) -> Result<Vec<(String, Vec<(String, String)>)>, Box<dyn Error>> {
         let func_module = self.get_module_by_name(&func_name).unwrap();
 
         let mut config = Config::new();
@@ -52,11 +52,16 @@ impl WasmDbEngine {
             ctx.runtime_data.as_mut().unwrap()
         })?;
 
+        let response_rows: Arc<Mutex<Vec<(String, Vec<(String, String)>)>>> = Arc::new(Mutex::new(vec![]));
+
+        let host_funcs = HostFuncs {
+            arguments,
+            store: &mut self.store,
+            response_rows: response_rows.clone(),
+        };
+
         let ctx = Context {
-            runtime_data: Some(HostFuncs {
-                arguments,
-                store: &mut self.store,
-            }),
+            runtime_data: Some(host_funcs),
             wasi: default_wasi(),
         };
 
@@ -67,7 +72,7 @@ impl WasmDbEngine {
         let start = instance.get_func(&mut store, "_start").unwrap();
         start.call(&mut store, &[], &mut [])?;
 
-        Ok(())
+        Ok(response_rows.clone().lock().unwrap().clone())
     }
 }
 
@@ -92,6 +97,7 @@ struct Context<'a> {
 pub struct HostFuncs<'a> {
     arguments: Vec<String>,
     store: &'a DataStore,
+    response_rows: Arc<Mutex<Vec<(String, Vec<(String, String)>)>>>,
 }
 
 impl <'a> host::Host for HostFuncs<'a> {
@@ -105,11 +111,23 @@ impl <'a> host::Host for HostFuncs<'a> {
         self.store.get_all()
     }
     fn get(&mut self, key: &str) -> (String, Vec<(String, String)>) {
-        (key.to_string(), self.store.get(key.to_string()))
+        let val = self.store.get(key.to_string());
+        
+        if val.len() > 0 {
+            return (key.to_string(), val)
+        } else {
+            return ("".to_string(), vec![])
+        }
     }
     fn upsert(&mut self, key: &str, value: Vec<(&str, &str)>) {
         let values: Vec<(String, String)> = value.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
         self.store.upsert(key.to_string(), values);
+    }
+    fn return_record(&mut self, value: (&str, Vec<(&str, &str)>)) {
+        let key = value.0.to_string();
+        let values: Vec<(String, String)> = value.1.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+        
+        self.response_rows.lock().unwrap().push((key, values));
     }
 }
 

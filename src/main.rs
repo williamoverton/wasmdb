@@ -1,16 +1,25 @@
 mod engine;
 use engine::{WasmDbEngine, FunctionModule};
 
+mod adapters;
+use adapters::http::HttpAdapter;
+
 use std::fs::File;
 use std::io::Read;
 
-fn main() {
+use std::sync::{Arc, Mutex};
 
-    let mut engine = WasmDbEngine::new();
+#[tokio::main]
+async fn main() {
 
-    add_modules(&mut engine);
+    let engine = Arc::new(Mutex::new(WasmDbEngine::new()));
 
-    engine.run("hello".to_string(), vec!["World".to_string(), format!("{}", 32.0)]).unwrap();
+    add_modules(&mut engine.clone().lock().unwrap());
+
+    // engine.run("hello".to_string(), vec!["World".to_string(), format!("{}", 32.0)]).unwrap();
+
+    let mut server = HttpAdapter{};
+    server.start(engine.clone()).await;
 }
 
 fn add_modules(engine: &mut WasmDbEngine) {
