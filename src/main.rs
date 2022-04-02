@@ -19,7 +19,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Modules can be compiled through either the text or binary format
     let engine = Engine::new(&config)?;
 
-
     let module_bytes = {
         let mut file = File::open("./src/builtin_modules/hello/target/wasm32-wasi/release/hello.wasm")?;
         let mut buffer = Vec::new();
@@ -32,25 +31,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut linker = Linker::new(&engine);
     wasmtime_wasi::add_to_linker(&mut linker, |cx: &mut Context| &mut cx.wasi)?;
 
-    let hcalls = HostFuncs{};
-
     host::add_to_linker(&mut linker, |ctx| -> &mut HostFuncs {
         ctx.runtime_data.as_mut().unwrap()
     })?;
 
     let ctx = Context {
-        runtime_data: Some(hcalls),
+        runtime_data: Some(HostFuncs{}),
         wasi: default_wasi(),
     };
 
     let mut store = Store::new(&engine, ctx);
 
-    // linker.allow_unknown_exports(true);
-    // linker.func_wrap("host", "print", |s: String| {println!("{}", s);})?;
-
-    // With a compiled `Module` we can then instantiate it, creating
-    // an `Instance` which we can actually poke at functions on.
-    // let instance = Instance::new(&mut store, &module, &[])?;
     let instance = linker.instantiate(&mut store, &module)?;
 
     let start = instance.get_func(&mut store, "_start").unwrap();
